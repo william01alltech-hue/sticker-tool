@@ -1,0 +1,9 @@
+{
+  "name": "StickerTool",
+  "short_name": "貼圖工具",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#00c300",
+  "icons": [{ "src": "https://via.placeholder.com/192", "sizes": "192x192", "type": "image/png" }]
+}
