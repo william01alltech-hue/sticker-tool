@@ -3,311 +3,400 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐶 Sticker Tool v3.5 - 透明背景終極版</title>
+    <title>🐶 Sticker Tool v3.6 - 強大切割修復版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/upng-js@2.1.0/UPNG.min.js"></script>
     <style>
-        :root { --line-green: #00c300; --bg: #f4f6f8; --purple: #6c5ce7; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 900px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); padding: 30px; }
+        :root { --line-green: #06c755; --bg: #f2f4f7; --card-bg: #ffffff; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #111; }
+        .container { max-width: 900px; margin: 0 auto; background: var(--card-bg); border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); padding: 30px; overflow: hidden; }
         
-        header { text-align: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
-        .version-tag { background: var(--line-green); color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.9rem; vertical-align: middle; }
+        /* 標題與導覽 */
+        header { text-align: center; border-bottom: 2px solid #f0f0f0; padding-bottom: 20px; margin-bottom: 20px; }
+        .version-badge { background: #ff4757; color: white; padding: 4px 12px; border-radius: 12px; font-size: 0.85rem; font-weight: bold; vertical-align: middle; margin-left: 10px; }
 
-        .menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
-        .menu-btn { background: white; border: 2px solid #ddd; border-radius: 15px; padding: 20px; text-align: center; cursor: pointer; transition: 0.2s; }
-        .menu-btn:hover, .menu-btn.active { border-color: var(--line-green); background: #f0fff4; transform: translateY(-5px); }
-        .menu-btn .icon { font-size: 2.5rem; display: block; margin-bottom: 10px; }
+        .nav-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
+        .nav-item { 
+            background: #f8f9fa; border: 2px solid #eee; border-radius: 16px; padding: 20px; text-align: center; cursor: pointer; transition: 0.2s;
+        }
+        .nav-item:hover, .nav-item.active { border-color: var(--line-green); background: #e8f5e9; transform: translateY(-3px); }
+        .nav-item h3 { margin: 10px 0 0 0; font-size: 1rem; color: #333; }
+        .nav-icon { font-size: 2rem; display: block; }
 
-        .section { display: none; animation: fadeIn 0.3s; }
-        .section.show { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        /* 內容區塊 */
+        .section { display: none; animation: slideUp 0.3s ease-out; }
+        .section.active { display: block; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* 動態播放區 (背景為棋盤格，顯示透明效果) */
-        #anime-player { background: #222; border-radius: 15px; padding: 20px; margin: 20px 0; text-align: center; border: 4px solid var(--line-green); }
-        #anime-screen { 
+        /* 元件樣式 */
+        .upload-zone { 
+            border: 3px dashed #d0d0d0; border-radius: 16px; padding: 40px 20px; text-align: center; 
+            cursor: pointer; position: relative; background: #fafafa; transition: 0.2s; margin-bottom: 20px;
+        }
+        .upload-zone:hover { border-color: var(--line-green); background: #fff; }
+        .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+        
+        .control-bar { background: #f1f3f5; padding: 15px; border-radius: 12px; display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 15px; }
+        input[type="number"] { padding: 8px; border-radius: 6px; border: 1px solid #ccc; width: 60px; text-align: center; font-size: 1rem; }
+        
+        .btn-primary { 
+            background: var(--line-green); color: white; border: none; padding: 16px 32px; 
+            border-radius: 50px; font-size: 1.1rem; font-weight: bold; cursor: pointer; width: 100%; 
+            transition: filter 0.2s; 
+        }
+        .btn-primary:hover { filter: brightness(1.1); }
+        .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+
+        /* 切割畫布 */
+        #crop-wrapper { background: #333; border-radius: 12px; overflow: hidden; margin-bottom: 20px; display: flex; justify-content: center; }
+        #crop-canvas { display: block; max-width: 100%; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+
+        /* 動態播放器 */
+        #player-box { background: #222; border-radius: 16px; padding: 30px; text-align: center; border: 4px solid var(--line-green); margin-bottom: 20px; }
+        #player-screen { 
             width: 240px; height: 240px; object-fit: contain; background: #333; border: 2px solid #555; 
-            /* 棋盤格背景，用來襯托透明圖片 */
             background-image: linear-gradient(45deg, #444 25%, transparent 25%), linear-gradient(-45deg, #444 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #444 75%), linear-gradient(-45deg, transparent 75%, #444 75%);
             background-size: 20px 20px;
         }
-
-        .upload-box { border: 3px dashed #ccc; padding: 30px; text-align: center; border-radius: 15px; cursor: pointer; position: relative; margin-bottom: 20px; }
-        .upload-box:hover { border-color: var(--line-green); background: #fafafa; }
-        .upload-box input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
         
-        .btn-action { background: var(--line-green); color: white; border: none; padding: 15px 30px; border-radius: 50px; font-size: 1.1rem; font-weight: bold; cursor: pointer; width: 100%; transition: 0.2s; }
-        .btn-action:hover { filter: brightness(1.1); }
-        .btn-apng { background: var(--purple); margin-top: 15px; } 
-
-        #preview-wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
-        .preview-thumb { aspect-ratio: 1; background: #eee; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-        .preview-thumb img { max-width: 90%; max-height: 90%; }
-        
-        canvas { display: none; }
-        .options-bar { background: #f8f9fa; padding: 15px; border-radius: 10px; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; gap: 20px; font-weight: bold; color: #555; }
-        input[type=checkbox] { transform: scale(1.2); margin-right: 8px; cursor: pointer; }
+        #preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 8px; }
+        .thumb { aspect-ratio: 1; background: #eee; border-radius: 6px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .thumb img { max-width: 100%; max-height: 100%; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <header>
-        <h1>🐶 Sticker Tool <span class="version-tag">v3.5 透明版</span></h1>
-        <p>確認標題是綠色的 v3.5，支援自動去背合成 APNG！</p>
+        <h1>🐶 Sticker Tool <span class="version-badge">v3.6 切割修復</span></h1>
     </header>
 
-    <div class="menu-grid">
-        <div class="menu-btn" onclick="showSection('sec-crop')"><span class="icon">✂️</span><h3>1. 圖集切割</h3></div>
-        <div class="menu-btn" onclick="showSection('sec-anime')"><span class="icon">🎞️</span><h3>2. 動態預覽 & 合成</h3></div>
-        <div class="menu-btn" onclick="showSection('sec-static')"><span class="icon">✨</span><h3>3. 靜態打包</h3></div>
+    <div class="nav-grid">
+        <div class="nav-item" onclick="switchTab('tab-crop')">
+            <span class="nav-icon">✂️</span><h3>1. 圖集切割</h3>
+        </div>
+        <div class="nav-item" onclick="switchTab('tab-anime')">
+            <span class="nav-icon">🎞️</span><h3>2. 動態預覽</h3>
+        </div>
+        <div class="nav-item" onclick="switchTab('tab-static')">
+            <span class="nav-icon">📦</span><h3>3. 打包下載</h3>
+        </div>
     </div>
 
-    <div id="sec-crop" class="section show">
-        <div class="upload-box">
+    <div id="tab-crop" class="section active">
+        <div class="upload-zone">
             <div style="font-size: 3rem;">📂</div>
-            <p>上傳圖集 (例如 4x5 藍色小怪獸)</p>
-            <input type="file" accept="image/*" onchange="loadCropImage(this)">
+            <p>點擊上傳圖集 (建議 4x5 排列)</p>
+            <input type="file" accept="image/*" onchange="handleCropUpload(this)">
         </div>
-        <div class="options-bar">
-            網格設定：欄 <input type="number" id="cols" value="4" style="width: 40px;"> 列 <input type="number" id="rows" value="5" style="width: 40px;">
-            <button onclick="drawGrid()" style="padding: 5px 15px; cursor:pointer;">更新網格</button>
+
+        <div class="control-bar">
+            <span>欄數 (直):</span> <input type="number" id="grid-cols" value="4" min="1" onchange="drawGridLine()">
+            <span>列數 (橫):</span> <input type="number" id="grid-rows" value="5" min="1" onchange="drawGridLine()">
+            <button onclick="drawGridLine()" style="padding: 8px 15px; cursor:pointer;">刷新網格</button>
         </div>
-        <canvas id="crop-canvas" style="display:block; max-width:100%; margin:0 auto; background:#333;"></canvas>
-        <button class="btn-action" style="margin-top: 20px;" onclick="executeCrop()">🚀 切割並傳送到動態預覽</button>
+
+        <div id="crop-wrapper">
+            <canvas id="crop-canvas"></canvas>
+        </div>
+
+        <button id="btn-cut" class="btn-primary" onclick="startCutting()">🚀 開始切割 (Execute Crop)</button>
     </div>
 
-    <div id="sec-anime" class="section">
-        <div class="options-bar" style="background: #e8f5e9; color: var(--line-green);">
-            <label style="cursor:pointer; display:flex; align-items:center;"><input type="checkbox" id="auto-process" checked onchange="reProcessFrames()"> ✨ 自動去背 + 白色描邊</label>
+    <div id="tab-anime" class="section">
+        <div class="control-bar" style="background: #e8f5e9;">
+            <label style="cursor:pointer; display:flex; align-items:center; font-weight:bold; color:#2e7d32;">
+                <input type="checkbox" id="auto-ai" checked onchange="processAnimationFrames()"> 
+                ✨ 啟用 AI 自動去背 + 描邊
+            </label>
         </div>
-        <div id="anime-player">
-            <img id="anime-screen" src="">
-            <div style="color: white; margin-top: 15px;">
-                播放速度: <input type="range" id="fps" min="1" max="20" value="10" oninput="updateFPS()"> <span id="fps-val">10</span> FPS
+
+        <div id="player-box">
+            <img id="player-screen" src="">
+            <div style="color:white; margin-top:15px;">
+                播放速度: <input type="range" id="fps-slider" min="1" max="24" value="10" oninput="updateFPS()"> 
+                <span id="fps-text">10</span> FPS
             </div>
-            <p id="frame-count" style="color: #aaa; font-size: 0.8rem;">尚未載入圖片</p>
+            <p id="status-msg" style="color:#aaa; font-size:0.9rem;">等待圖片...</p>
         </div>
+
+        <button class="btn-primary" style="background:#6c5ce7;" onclick="createAPNG()">📦 下載 APNG (LINE 動態貼圖)</button>
         
-        <button class="btn-action btn-apng" onclick="generateAPNG()">📦 合成並下載透明 APNG</button>
-        
-        <div class="upload-box" style="margin-top: 20px; padding: 20px;">
-            <p>或手動上傳多張序列圖</p>
-            <input type="file" multiple accept="image/*" onchange="loadAnimeFiles(this.files)">
+        <div class="upload-zone" style="margin-top:20px; padding:20px;">
+            <p>或手動上傳多張序列圖 (PNG/JPG)</p>
+            <input type="file" multiple accept="image/*" onchange="handleAnimeUpload(this.files)">
         </div>
     </div>
 
-    <div id="sec-static" class="section">
-        <div id="preview-wall"></div>
-        <p id="static-status" style="text-align: center; color: #666; margin: 20px 0;">等待圖片...</p>
-        <button class="btn-action" onclick="downloadZip()">📦 下載序列圖 ZIP</button>
+    <div id="tab-static" class="section">
+        <div id="preview-grid"></div>
+        <button class="btn-primary" style="margin-top:20px;" onclick="downloadStaticZip()">📦 下載序列圖 ZIP</button>
     </div>
 </div>
 
 <script>
-    let originalFrames = []; // 存原始圖
-    let processedFrames = []; // 存去背後的圖 (用於播放和下載)
-    let cropImg = null;
-    let timer = null;
-    let frameIdx = 0;
+    // 全域變數
+    let rawImage = null;       // 原始大圖
+    let rawFrames = [];        // 切割後的原始小圖 (Base64)
+    let finalFrames = [];      // AI 處理後的成品圖 (Base64)
+    let playTimer = null;      // 播放計時器
+    let playIndex = 0;         // 目前播放幀數
 
-    function showSection(id) {
-        document.querySelectorAll('.section').forEach(el => el.classList.remove('show'));
-        document.querySelectorAll('.menu-btn').forEach(el => el.classList.remove('active'));
-        document.getElementById(id).classList.add('show');
-        if(id !== 'sec-anime') clearInterval(timer);
-    }
-
-    // --- 核心：AI 去背與描邊 ---
-    async function aiProcess(dataUrl) {
-        return new Promise((resolve) => {
-            const img = new Image();
-            img.onload = () => {
-                // 1. 建立畫布並加上邊距
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                const padding = 10; // LINE 建議邊距
-                canvas.width = img.width + padding * 2;
-                canvas.height = img.height + padding * 2;
-                ctx.drawImage(img, padding, padding);
-
-                // 2. 自動去背 (針對接近白色的背景)
-                const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                const d = imgData.data;
-                for (let i = 0; i < d.length; i += 4) {
-                    const r = d[i], g = d[i + 1], b = d[i + 2];
-                    // 如果像素很亮 (接近白色)，將其透明度 (Alpha) 設為 0
-                    if (r > 230 && g > 230 && b > 230) {
-                        d[i + 3] = 0;
-                    }
-                }
-                ctx.putImageData(imgData, 0, 0);
-
-                // 3. 加上白色描邊 (利用陰影濾鏡)
-                const sCanvas = document.createElement('canvas');
-                sCanvas.width = canvas.width; sCanvas.height = canvas.height;
-                const sCtx = sCanvas.getContext('2d');
-                sCtx.shadowColor = 'white';
-                sCtx.shadowBlur = 4; // 描邊厚度
-                // 在四個方向繪製以增強描邊
-                sCtx.drawImage(canvas, -2, 0); sCtx.drawImage(canvas, 2, 0);
-                sCtx.drawImage(canvas, 0, -2); sCtx.drawImage(canvas, 0, 2);
-                // 將原圖蓋在上面，確保內部不被填滿
-                sCtx.drawImage(canvas, 0, 0);
-
-                resolve(sCanvas.toDataURL("image/png"));
-            };
-            img.src = dataUrl;
-        });
-    }
-
-    // --- 重新處理流程 (當開關切換時) ---
-    async function reProcessFrames() {
-        if(originalFrames.length === 0) return;
-        document.getElementById('frame-count').innerText = "正在處理去背與描邊...";
-        clearInterval(timer);
+    // 切換分頁
+    function switchTab(id) {
+        document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
         
-        const useAI = document.getElementById('auto-process').checked;
-        processedFrames = [];
-
-        for(let src of originalFrames) {
-            if(useAI) {
-                const processed = await aiProcess(src);
-                processedFrames.push(processed);
-            } else {
-                processedFrames.push(src);
-            }
-        }
-        startPlay();
-        updateStaticPreview();
+        // 只有切換到動態分頁才播放
+        if(id === 'tab-anime') startPlayer();
+        else clearInterval(playTimer);
     }
 
-    // --- 切割邏輯 ---
-    function loadCropImage(input) {
+    // --- 1. 圖片上傳與網格繪製 ---
+    function handleCropUpload(input) {
         if(!input.files[0]) return;
-        const r = new FileReader();
-        r.onload = (e) => {
-            cropImg = new Image();
-            cropImg.onload = () => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            rawImage = new Image();
+            rawImage.onload = () => {
                 const cv = document.getElementById('crop-canvas');
-                cv.width = cropImg.width; cv.height = cropImg.height;
-                drawGrid();
+                cv.width = rawImage.width;
+                cv.height = rawImage.height;
+                drawGridLine();
             };
-            cropImg.src = e.target.result;
+            rawImage.src = e.target.result;
         };
         reader.readAsDataURL(input.files[0]);
     }
 
-    function drawGrid() {
-        if(!cropImg) return;
-        const cv = document.getElementById('crop-canvas'); const ctx = cv.getContext('2d');
-        ctx.drawImage(cropImg, 0, 0);
-        const c = document.getElementById('cols').value, r = document.getElementById('rows').value;
-        const w = cv.width/c, h = cv.height/r;
-        ctx.strokeStyle = '#00ff00'; ctx.lineWidth = 3; ctx.setLineDash([6, 4]);
-        for(let i=1; i<c; i++){ctx.beginPath();ctx.moveTo(i*w,0);ctx.lineTo(i*w,cv.height);ctx.stroke();}
-        for(let j=1; j<r; j++){ctx.beginPath();ctx.moveTo(0,j*h);ctx.lineTo(cv.width,j*h);ctx.stroke();}
-    }
-
-    async function executeCrop() {
-        if(!cropImg) return alert('請先上傳圖片');
-        const c = document.getElementById('cols').value, r = document.getElementById('rows').value;
-        const w = cropImg.width/c, h = cropImg.height/r;
+    function drawGridLine() {
+        if(!rawImage) return;
+        const cv = document.getElementById('crop-canvas');
+        const ctx = cv.getContext('2d');
         
-        originalFrames = [];
-        const tempCv = document.createElement('canvas'); const tempCtx = tempCv.getContext('2d');
-        tempCv.width = w; tempCv.height = h;
+        // 重繪原圖
+        ctx.drawImage(rawImage, 0, 0);
 
-        for(let i=0; i<r; i++) {
-            for(let j=0; j<c; j++) {
-                tempCtx.clearRect(0,0,w,h);
-                tempCtx.drawImage(cropImg, j*w, i*h, w, h, 0, 0, w, h);
-                originalFrames.push(tempCv.toDataURL("image/png"));
-            }
+        const cols = parseInt(document.getElementById('grid-cols').value);
+        const rows = parseInt(document.getElementById('grid-rows').value);
+        const cellW = cv.width / cols;
+        const cellH = cv.height / rows;
+
+        ctx.strokeStyle = '#00ff00';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([10, 5]);
+
+        // 畫垂直線
+        for(let i=1; i<cols; i++) {
+            ctx.beginPath(); ctx.moveTo(i*cellW, 0); ctx.lineTo(i*cellW, cv.height); ctx.stroke();
         }
-        showSection('sec-anime');
-        reProcessFrames(); // 切割完立刻進行處理
+        // 畫水平線
+        for(let j=1; j<rows; j++) {
+            ctx.beginPath(); ctx.moveTo(0, j*cellH); ctx.lineTo(cv.width, j*cellH); ctx.stroke();
+        }
     }
 
-    // --- 動態播放 ---
-    function loadAnimeFiles(files) {
-        originalFrames = [];
+    // --- 2. 核心切割邏輯 (修復版) ---
+    async function startCutting() {
+        if(!rawImage) return alert('請先上傳圖片！');
+        
+        const btn = document.getElementById('btn-cut');
+        btn.innerText = '⏳ 正在切割處理中...';
+        btn.disabled = true;
+
+        // 給 UI 一點時間更新文字
+        await new Promise(r => setTimeout(r, 50));
+
+        try {
+            const cols = parseInt(document.getElementById('grid-cols').value);
+            const rows = parseInt(document.getElementById('grid-rows').value);
+            
+            // 使用 floor 避免浮點數誤差導致的空白
+            const cellW = Math.floor(rawImage.width / cols);
+            const cellH = Math.floor(rawImage.height / rows);
+
+            rawFrames = [];
+            
+            // 暫存畫布
+            const tempCv = document.createElement('canvas');
+            const tempCtx = tempCv.getContext('2d');
+            tempCv.width = cellW;
+            tempCv.height = cellH;
+
+            for(let r=0; r<rows; r++) {
+                for(let c=0; c<cols; c++) {
+                    // 清空暫存
+                    tempCtx.clearRect(0, 0, cellW, cellH);
+                    // 核心切割：從原圖擷取區塊
+                    tempCtx.drawImage(
+                        rawImage, 
+                        c * cellW, r * cellH, cellW, cellH,  // 來源座標與大小
+                        0, 0, cellW, cellH                   // 目標座標與大小
+                    );
+                    rawFrames.push(tempCv.toDataURL('image/png'));
+                }
+            }
+
+            console.log(`切割完成：共 ${rawFrames.length} 張`);
+            
+            // 自動跳轉並處理
+            switchTab('tab-anime');
+            await processAnimationFrames();
+            
+        } catch (err) {
+            alert('切割失敗：' + err.message);
+            console.error(err);
+        } finally {
+            btn.innerText = '🚀 開始切割 (Execute Crop)';
+            btn.disabled = false;
+        }
+    }
+
+    // --- 3. AI 處理與播放 ---
+    function handleAnimeUpload(files) {
+        rawFrames = [];
         let loaded = 0;
         Array.from(files).forEach((f, i) => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                originalFrames[i] = e.target.result; loaded++;
-                if(loaded === files.length) reProcessFrames();
+            const r = new FileReader();
+            r.onload = (e) => {
+                rawFrames[i] = e.target.result; // 保持順序
+                loaded++;
+                if(loaded === files.length) processAnimationFrames();
             };
-            reader.readAsDataURL(f);
+            r.readAsDataURL(f);
+        });
+        switchTab('tab-anime');
+    }
+
+    async function processAnimationFrames() {
+        const status = document.getElementById('status-msg');
+        status.innerText = '正在進行 AI 去背與描邊...';
+        clearInterval(playTimer);
+
+        const useAI = document.getElementById('auto-ai').checked;
+        finalFrames = [];
+
+        for(let src of rawFrames) {
+            if(useAI) {
+                finalFrames.push(await applyAI(src));
+            } else {
+                finalFrames.push(src);
+            }
+        }
+
+        status.innerText = `已載入 ${finalFrames.length} 張影格`;
+        updateStaticWall();
+        startPlayer();
+    }
+
+    // AI 去背函數
+    function applyAI(src) {
+        return new Promise(resolve => {
+            const img = new Image();
+            img.onload = () => {
+                const pad = 10;
+                const cv = document.createElement('canvas');
+                cv.width = img.width + pad*2; cv.height = img.height + pad*2;
+                const ctx = cv.getContext('2d');
+                ctx.drawImage(img, pad, pad);
+
+                // 去背 (濾除白色)
+                const id = ctx.getImageData(0,0,cv.width,cv.height);
+                const d = id.data;
+                for(let i=0; i<d.length; i+=4) {
+                    if(d[i]>230 && d[i+1]>230 && d[i+2]>230) d[i+3] = 0;
+                }
+                ctx.putImageData(id, 0, 0);
+
+                // 描邊
+                const sc = document.createElement('canvas');
+                sc.width = cv.width; sc.height = cv.height;
+                const sctx = sc.getContext('2d');
+                sctx.shadowColor = 'white'; sctx.shadowBlur = 4;
+                sctx.drawImage(cv, 0, 0);
+                sctx.drawImage(cv, 0, 0); // 畫兩次增強
+                sctx.shadowBlur = 0;
+                sctx.drawImage(cv, 0, 0); // 蓋上原圖
+
+                resolve(sc.toDataURL());
+            };
+            img.src = src;
         });
     }
 
-    function startPlay() {
-        clearInterval(timer);
-        if(processedFrames.length === 0) return;
-        document.getElementById('frame-count').innerText = `目前載入：${processedFrames.length} 張影格 (已處理)`;
-        const fps = document.getElementById('fps').value;
-        timer = setInterval(() => {
-            document.getElementById('anime-screen').src = processedFrames[frameIdx];
-            frameIdx = (frameIdx + 1) % processedFrames.length;
+    // 播放器邏輯
+    function startPlayer() {
+        clearInterval(playTimer);
+        if(finalFrames.length === 0) return;
+        
+        const fps = document.getElementById('fps-slider').value;
+        playTimer = setInterval(() => {
+            document.getElementById('player-screen').src = finalFrames[playIndex];
+            playIndex = (playIndex + 1) % finalFrames.length;
         }, 1000 / fps);
     }
 
     function updateFPS() {
-        document.getElementById('fps-val').innerText = document.getElementById('fps').value;
-        startPlay();
+        document.getElementById('fps-text').innerText = document.getElementById('fps-slider').value;
+        startPlayer();
     }
 
-    // --- APNG 合成 ---
-    async function generateAPNG() {
-        if(processedFrames.length === 0) return alert("請先載入圖片！");
-        const fps = document.getElementById('fps').value;
+    // --- 4. 輸出功能 ---
+    async function createAPNG() {
+        if(finalFrames.length === 0) return alert('沒有圖片');
+        const fps = document.getElementById('fps-slider').value;
         const delay = 1000 / fps;
         
         const buffs = [];
-        // 使用處理後的第一張圖來決定尺寸
-        const img = new Image();
-        await new Promise(r => { img.onload = r; img.src = processedFrames[0]; });
-        const w = img.width, h = img.height;
+        const w = 320; // LINE 標準寬
+        const h = 270; // LINE 標準高 (示意)
+        // 這裡我們用第一張圖的實際尺寸
+        const tempImg = new Image();
+        await new Promise(r => { tempImg.onload = r; tempImg.src = finalFrames[0]; });
         
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        const ctx = canvas.getContext('2d');
+        const cv = document.createElement('canvas');
+        cv.width = tempImg.width; cv.height = tempImg.height;
+        const ctx = cv.getContext('2d');
 
-        for(let i=0; i<processedFrames.length; i++) {
-            await new Promise(resolve => {
-                const frameImg = new Image();
-                frameImg.onload = () => {
-                    ctx.clearRect(0, 0, w, h);
-                    ctx.drawImage(frameImg, 0, 0, w, h);
-                    buffs.push(ctx.getImageData(0, 0, w, h).data.buffer);
-                    resolve();
+        for(let src of finalFrames) {
+            await new Promise(r => {
+                const img = new Image();
+                img.onload = () => {
+                    ctx.clearRect(0,0,cv.width,cv.height);
+                    ctx.drawImage(img, 0, 0);
+                    buffs.push(ctx.getImageData(0,0,cv.width,cv.height).data.buffer);
+                    r();
                 };
-                frameImg.src = processedFrames[i];
+                img.src = src;
             });
         }
-        const apngBlob = UPNG.encode(buffs, w, h, 0, new Array(processedFrames.length).fill(delay));
+
+        const blob = UPNG.encode(buffs, cv.width, cv.height, 0, new Array(finalFrames.length).fill(delay));
         const link = document.createElement('a');
-        link.download = "animation.png";
-        link.href = URL.createObjectURL(new Blob([apngBlob], {type: "image/png"}));
+        link.download = 'sticker_animation.png';
+        link.href = URL.createObjectURL(new Blob([blob], {type:'image/png'}));
         link.click();
     }
 
-    function updateStaticPreview() {
-        const wall = document.getElementById('preview-wall'); wall.innerHTML = '';
-        processedFrames.forEach(src => {
-            const div = document.createElement('div'); div.className = 'preview-thumb';
-            div.innerHTML = `<img src="${src}">`; wall.appendChild(div);
+    function updateStaticWall() {
+        const grid = document.getElementById('preview-grid');
+        grid.innerHTML = '';
+        finalFrames.forEach(src => {
+            const div = document.createElement('div');
+            div.className = 'thumb';
+            div.innerHTML = `<img src="${src}">`;
+            grid.appendChild(div);
         });
-        document.getElementById('static-status').innerText = `準備打包 ${processedFrames.length} 張已處理圖片`;
     }
 
-    function downloadZip() {
-        if(processedFrames.length === 0) return alert('沒有圖片');
+    function downloadStaticZip() {
+        if(finalFrames.length === 0) return alert('沒有圖片');
         const zip = new JSZip();
-        processedFrames.forEach((src, i) => zip.file(`${i+1}.png`, src.split(',')[1], {base64: true}));
-        zip.generateAsync({type:"blob"}).then(b => { const a=document.createElement('a'); a.download="frames.zip"; a.href=URL.createObjectURL(b); a.click(); });
+        finalFrames.forEach((src, i) => zip.file(`${i+1}.png`, src.split(',')[1], {base64: true}));
+        zip.generateAsync({type:"blob"}).then(b => {
+            const a = document.createElement('a'); a.download = 'frames.zip'; a.href = URL.createObjectURL(b); a.click();
+        });
     }
 </script>
 </body>
