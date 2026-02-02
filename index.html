@@ -3,25 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐶 Sticker Tool v4.1 - APNG 核心修復版</title>
+    <title>🐶 Sticker Tool v4.2 - APNG 即時驗證版</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/upng-js@2.1.0/UPNG.min.js"></script>
 
     <style>
-        :root { --accent: #00c300; --bg: #f3f4f6; --dark: #1f2937; }
+        :root { --accent: #00c300; --bg: #f3f4f6; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
         .container { max-width: 950px; margin: 0 auto; background: white; border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.1); padding: 40px; position: relative; }
         
         header { text-align: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 30px; }
-        .badge { background: #6c5ce7; color: white; padding: 6px 14px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; vertical-align: middle; }
+        .badge { background: #e17055; color: white; padding: 6px 14px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; vertical-align: middle; }
 
         .nav-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; }
         .nav-btn { background: #fff; border: 2px solid #e5e7eb; border-radius: 18px; padding: 25px; text-align: center; cursor: pointer; transition: all 0.2s; }
-        .nav-btn:hover, .nav-btn.active { border-color: var(--accent); background: #f0fdf4; transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0, 195, 0, 0.1); }
+        .nav-btn.active { border-color: var(--accent); background: #f0fdf4; transform: translateY(-4px); box-shadow: 0 10px 20px rgba(0, 195, 0, 0.1); }
         .nav-icon { font-size: 2.5rem; display: block; margin-bottom: 12px; }
 
         .section { display: none; animation: slideUp 0.4s; }
@@ -48,10 +46,13 @@
         .thumb { background: white; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; aspect-ratio: 1; border: 1px solid #e5e7eb; }
         .thumb img { width: 100%; height: 100%; object-fit: contain; }
 
+        /* 結果驗證區 */
+        #result-area { margin-top: 30px; padding: 20px; background: #fff3cd; border: 2px solid #ffeeba; border-radius: 15px; text-align: center; display: none; }
+        #result-img { max-width: 200px; border: 2px solid #333; background-image: linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%); background-size: 20px 20px; }
+
         #loading-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 9999; flex-direction: column; justify-content: center; align-items: center; color: white; }
         .spinner { width: 60px; height: 60px; border: 6px solid #f3f3f3; border-top: 6px solid var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        #loading-text { font-size: 1.5rem; font-weight: bold; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -59,13 +60,12 @@
 <div id="loading-overlay">
     <div class="spinner"></div>
     <div id="loading-text">處理中...</div>
-    <div id="loading-sub" style="color:#aaa;">請稍候</div>
 </div>
 
 <div class="container">
     <header>
-        <h1>🐶 Sticker Tool <span class="badge">v4.1 核心修復</span></h1>
-        <p>已修復 Pako 核心，APNG 生成功能恢復正常！</p>
+        <h1>🐶 Sticker Tool <span class="badge">v4.2 驗證版</span></h1>
+        <p>生成後請看下方的「結果驗證區」，會動才是真的！</p>
     </header>
 
     <div class="nav-grid">
@@ -76,8 +76,8 @@
 
     <div id="tab-crop" class="section active">
         <div class="upload-zone">
-            <div style="font-size: 4rem; margin-bottom: 10px;">📂</div>
-            <p style="font-size: 1.2rem; color: #666;">上傳圖片</p>
+            <div style="font-size: 4rem;">📂</div>
+            <p>上傳圖片</p>
             <input type="file" accept="image/*" onchange="loadCropImage(this)">
         </div>
         <div class="control-bar">
@@ -92,13 +92,23 @@
     <div id="tab-anime" class="section">
         <div id="anime-box">
             <img id="anime-screen" src="">
-            <div style="color:white; margin-top:20px; font-size: 1.1rem;">
-                播放速度: <input type="range" id="fps" min="1" max="24" value="10" oninput="updateFPS()" style="vertical-align: middle;"> 
-                <span id="fps-val" style="font-weight: bold; color: var(--accent);">10</span> FPS
+            <div style="color:white; margin-top:20px;">
+                播放速度: <input type="range" id="fps" min="1" max="24" value="10" oninput="updateFPS()"> 
+                <span id="fps-val">10</span> FPS
             </div>
-            <p id="status-text" style="color:#9ca3af; font-size:0.9rem; margin-top: 10px;">請先執行切割</p>
+            <p id="status-text" style="color:#9ca3af; margin-top: 10px;">請先執行切割</p>
         </div>
-        <button class="btn-main" style="background:#0984e3; box-shadow: 0 4px 15px rgba(9, 132, 227, 0.3);" onclick="createAPNG()">📦 下載透明 APNG (修復版)</button>
+        
+        <button class="btn-main" style="background:#0984e3;" onclick="createAPNG()">📦 生成 APNG (並顯示驗證結果)</button>
+        
+        <div id="result-area">
+            <h3 style="color:#856404; margin-top:0;">🟢 最終成品驗證</h3>
+            <p>如果下面這張圖在動，代表 APNG 製作成功！<br>(電腦預覽程式可能不會動，請以這裡為準)</p>
+            <img id="result-img" src="">
+            <br><br>
+            <button class="btn-main" style="width: auto; background: #333;" onclick="downloadResultBlob()">⬇️ 下載這個檔案</button>
+        </div>
+
         <div class="upload-zone" style="margin-top:30px; padding:30px;">
             <p>或手動上傳序列圖</p>
             <input type="file" multiple accept="image/*" onchange="loadAnimeFiles(this.files)">
@@ -116,10 +126,10 @@
     let frames = [];
     let timer = null;
     let frameIdx = 0;
+    let currentAPNGBlob = null; // 暫存生成的 Blob
 
-    function showLoading(mainText, subText) {
-        document.getElementById('loading-text').innerText = mainText;
-        document.getElementById('loading-sub').innerText = subText || '';
+    function showLoading(text) {
+        document.getElementById('loading-text').innerText = text;
         document.getElementById('loading-overlay').style.display = 'flex';
     }
     function hideLoading() {
@@ -163,7 +173,7 @@
 
     async function startCutAndProcess() {
         if(!rawImg) return alert('請先上傳圖片');
-        showLoading('正在切割與去背...', '啟動魔術棒演算法');
+        showLoading('切割去背中...');
         await new Promise(r => setTimeout(r, 100));
 
         try {
@@ -181,7 +191,7 @@
                 for(let j=0; j<c; j++) {
                     ctx.clearRect(0,0,w,h);
                     ctx.drawImage(rawImg, j*w, i*h, w, h, 0, 0, w, h);
-                    magicWandRemove(ctx, w, h); // 魔術棒
+                    magicWandRemove(ctx, w, h);
                     const strokedUrl = addStroke(cv);
                     frames.push(strokedUrl);
                 }
@@ -201,7 +211,6 @@
         const d = imgData.data;
         const visited = new Uint8Array(w * h);
         const queue = [];
-        
         const seeds = [[0,0], [w-1,0], [0,h-1], [w-1,h-1]];
         for(let x=0; x<w; x+=5) seeds.push([x, 0]);
         for(let y=0; y<h; y+=5) seeds.push([0, y]);
@@ -240,10 +249,10 @@
         return sc.toDataURL();
     }
 
-    // --- APNG 生成 (修復版) ---
+    // --- APNG 生成 (含即時驗證) ---
     async function createAPNG() {
         if(frames.length === 0) return alert('沒有圖片');
-        showLoading('正在生成 APNG...', '這可能需要幾秒鐘');
+        showLoading('生成 APNG 中...');
         await new Promise(r => setTimeout(r, 100));
 
         try {
@@ -257,8 +266,6 @@
             const ctx = cv.getContext('2d');
 
             for(let i=0; i<frames.length; i++) {
-                showLoading(`處理影格 ${i+1}/${frames.length}`, '讀取中...');
-                await new Promise(r => setTimeout(r, 10));
                 await new Promise(r => {
                     const temp = new Image(); 
                     temp.onload = () => {
@@ -269,17 +276,17 @@
                 });
             }
             
-            showLoading('正在壓縮...', '請稍候');
-            await new Promise(r => setTimeout(r, 100));
-
-            // 現在有了 Pako，這行就不會報錯了！
+            // 生成 Blob
             const blob = UPNG.encode(buffs, w, h, 0, new Array(frames.length).fill(delay));
+            currentAPNGBlob = new Blob([blob], {type:'image/png'});
             
-            showLoading('下載中...', '完成！');
-            const link = document.createElement('a'); 
-            link.download = 'sticker_animation.png';
-            link.href = URL.createObjectURL(new Blob([blob], {type:'image/png'})); 
-            link.click();
+            // 顯示結果驗證區
+            const url = URL.createObjectURL(currentAPNGBlob);
+            document.getElementById('result-img').src = url;
+            document.getElementById('result-area').style.display = 'block';
+            
+            // 滾動到結果區
+            document.getElementById('result-area').scrollIntoView({behavior: "smooth"});
 
         } catch(e) {
             alert("生成失敗: " + e);
@@ -287,6 +294,14 @@
         } finally {
             hideLoading();
         }
+    }
+
+    function downloadResultBlob() {
+        if(!currentAPNGBlob) return;
+        const link = document.createElement('a'); 
+        link.download = 'sticker_animation.png';
+        link.href = URL.createObjectURL(currentAPNGBlob); 
+        link.click();
     }
 
     function loadAnimeFiles(files) {
@@ -319,8 +334,6 @@
         const wall = document.getElementById('preview-wall'); wall.innerHTML = '';
         frames.forEach(src => {
             const d = document.createElement('div'); d.className = 'thumb';
-            d.style.backgroundImage = 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%)';
-            d.style.backgroundSize = '10px 10px';
             d.innerHTML = `<img src="${src}">`; wall.appendChild(d);
         });
     }
