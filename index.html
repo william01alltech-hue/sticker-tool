@@ -3,50 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐶 Sticker Tool v3.3 - 動態預覽修復版</title>
+    <title>🐶 Sticker Tool v3.4 - APNG 動態合成版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/upng-js@2.1.0/UPNG.min.js"></script>
     <style>
         :root { --line-green: #00c300; --bg: #f4f6f8; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
         .container { max-width: 900px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); padding: 30px; }
         
-        /* 標題區 */
         header { text-align: center; border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 20px; }
-        h1 { margin: 0; color: #333; }
-        .version-tag { background: #ff4757; color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.9rem; vertical-align: middle; }
+        .version-tag { background: #6c5ce7; color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.9rem; vertical-align: middle; }
 
-        /* 首頁分流按鈕 */
         .menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 30px; }
-        .menu-btn { 
-            background: white; border: 2px solid #ddd; border-radius: 15px; padding: 20px; text-align: center; cursor: pointer; transition: 0.2s;
-        }
-        .menu-btn:hover, .menu-btn.active { border-color: var(--line-green); background: #f0fff4; transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .menu-btn { background: white; border: 2px solid #ddd; border-radius: 15px; padding: 20px; text-align: center; cursor: pointer; transition: 0.2s; }
+        .menu-btn:hover, .menu-btn.active { border-color: var(--line-green); background: #f0fff4; transform: translateY(-5px); }
         .menu-btn .icon { font-size: 2.5rem; display: block; margin-bottom: 10px; }
-        .menu-btn h3 { margin: 0; font-size: 1.1rem; }
 
-        /* 功能區塊切換 */
         .section { display: none; animation: fadeIn 0.3s; }
         .section.show { display: block; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* 動態播放器 (重點) */
-        #anime-player { 
-            background: #222; border-radius: 15px; padding: 20px; margin: 20px 0; text-align: center; 
-            border: 4px solid var(--line-green); /* 綠色框框方便你辨識 */
-        }
-        #anime-screen { 
-            width: 200px; height: 200px; object-fit: contain; background: #333; border: 2px solid #555; 
-            background-image: linear-gradient(45deg, #444 25%, transparent 25%), linear-gradient(-45deg, #444 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #444 75%), linear-gradient(-45deg, transparent 75%, #444 75%);
-            background-size: 20px 20px;
-        }
+        /* 動態播放區 */
+        #anime-player { background: #222; border-radius: 15px; padding: 20px; margin: 20px 0; text-align: center; border: 4px solid var(--line-green); }
+        #anime-screen { width: 200px; height: 200px; object-fit: contain; background: #333; border: 2px solid #555; background-image: linear-gradient(45deg, #444 25%, transparent 25%), linear-gradient(-45deg, #444 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #444 75%), linear-gradient(-45deg, transparent 75%, #444 75%); background-size: 20px 20px; }
 
-        /* 其他元件 */
         .upload-box { border: 3px dashed #ccc; padding: 30px; text-align: center; border-radius: 15px; cursor: pointer; position: relative; margin-bottom: 20px; }
         .upload-box:hover { border-color: var(--line-green); background: #fafafa; }
         .upload-box input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
         
         .btn-action { background: var(--line-green); color: white; border: none; padding: 15px 30px; border-radius: 50px; font-size: 1.1rem; font-weight: bold; cursor: pointer; width: 100%; }
-        
+        .btn-apng { background: #6c5ce7; margin-top: 15px; } /* 紫色按鈕專用 */
+
         #preview-wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
         .preview-thumb { aspect-ratio: 1; background: #eee; border-radius: 8px; overflow: hidden; display: flex; align-items: center; justify-content: center; }
         .preview-thumb img { max-width: 90%; max-height: 90%; }
@@ -58,34 +45,24 @@
 
 <div class="container">
     <header>
-        <h1>🐶 Sticker Tool <span class="version-tag">v3.3</span></h1>
-        <p>確認標題有 v3.3 紅色標籤才代表更新成功！</p>
+        <h1>🐶 Sticker Tool <span class="version-tag">v3.4 APNG</span></h1>
+        <p>確認標題變成紫色標籤 v3.4 才是最新版喔！</p>
     </header>
 
     <div class="menu-grid">
-        <div class="menu-btn" onclick="showSection('sec-crop')">
-            <span class="icon">✂️</span>
-            <h3>1. 圖集切割</h3>
-        </div>
-        <div class="menu-btn" onclick="showSection('sec-anime')">
-            <span class="icon">🎞️</span>
-            <h3>2. 動態預覽</h3>
-        </div>
-        <div class="menu-btn" onclick="showSection('sec-static')">
-            <span class="icon">✨</span>
-            <h3>3. 靜態打包</h3>
-        </div>
+        <div class="menu-btn" onclick="showSection('sec-crop')"><span class="icon">✂️</span><h3>1. 圖集切割</h3></div>
+        <div class="menu-btn" onclick="showSection('sec-anime')"><span class="icon">🎞️</span><h3>2. 動態預覽</h3></div>
+        <div class="menu-btn" onclick="showSection('sec-static')"><span class="icon">✨</span><h3>3. 靜態打包</h3></div>
     </div>
 
     <div id="sec-crop" class="section show">
         <div class="upload-box">
             <div style="font-size: 3rem;">📂</div>
-            <p>上傳那張 4x5 的藍色小怪獸圖集</p>
+            <p>上傳 4x5 藍色小怪獸圖集</p>
             <input type="file" accept="image/*" onchange="loadCropImage(this)">
         </div>
         <div style="background: #eee; padding: 15px; border-radius: 10px; margin-bottom: 10px;">
-            網格設定：欄 <input type="number" id="cols" value="4" style="width: 40px;"> 
-            列 <input type="number" id="rows" value="5" style="width: 40px;">
+            網格設定：欄 <input type="number" id="cols" value="4" style="width: 40px;"> 列 <input type="number" id="rows" value="5" style="width: 40px;">
             <button onclick="drawGrid()">更新網格</button>
         </div>
         <canvas id="crop-canvas" style="display:block; max-width:100%; margin:0 auto; background:#333;"></canvas>
@@ -94,23 +71,24 @@
 
     <div id="sec-anime" class="section">
         <div id="anime-player">
-            <div style="color: white; margin-bottom: 10px;">🔴 這是動態播放器 (圖片會在這裡動)</div>
             <img id="anime-screen" src="">
             <div style="color: white; margin-top: 15px;">
-                速度: <input type="range" id="fps" min="1" max="24" value="10" oninput="updateFPS()"> <span id="fps-val">10</span> FPS
+                播放速度: <input type="range" id="fps" min="1" max="20" value="10" oninput="updateFPS()"> <span id="fps-val">10</span> FPS
             </div>
             <p id="frame-count" style="color: #aaa; font-size: 0.8rem;">尚未載入圖片</p>
         </div>
-        <div class="upload-box">
-            <p>或手動上傳多張序列圖</p>
+        
+        <button class="btn-action btn-apng" onclick="generateAPNG()">📦 合成並下載 APNG (LINE 格式)</button>
+        
+        <div class="upload-box" style="margin-top: 20px;">
+            <p>或手動上傳序列圖</p>
             <input type="file" multiple accept="image/*" onchange="loadAnimeFiles(this.files)">
         </div>
     </div>
 
     <div id="sec-static" class="section">
         <div id="preview-wall"></div>
-        <p id="status-text" style="text-align: center; color: #666;">等待圖片中...</p>
-        <button class="btn-action" onclick="downloadZip()">📦 下載 ZIP (靜態序列圖)</button>
+        <button class="btn-action" style="margin-top:20px;" onclick="downloadZip()">📦 下載序列圖 ZIP</button>
     </div>
 </div>
 
@@ -124,10 +102,10 @@
         document.querySelectorAll('.section').forEach(el => el.classList.remove('show'));
         document.querySelectorAll('.menu-btn').forEach(el => el.classList.remove('active'));
         document.getElementById(id).classList.add('show');
-        if(id !== 'sec-anime') clearInterval(timer); // 離開播放頁面就停止
+        if(id !== 'sec-anime') clearInterval(timer);
     }
 
-    // --- 切割邏輯 ---
+    // --- 切割 ---
     function loadCropImage(input) {
         if(!input.files[0]) return;
         const reader = new FileReader();
@@ -148,12 +126,9 @@
         const cv = document.getElementById('crop-canvas');
         const ctx = cv.getContext('2d');
         ctx.drawImage(cropImg, 0, 0);
-        
         const c = document.getElementById('cols').value;
         const r = document.getElementById('rows').value;
-        const w = cv.width / c;
-        const h = cv.height / r;
-
+        const w = cv.width / c; const h = cv.height / r;
         ctx.strokeStyle = '#00ff00'; ctx.lineWidth = 3; ctx.setLineDash([6, 4]);
         for(let i=1; i<c; i++) { ctx.beginPath(); ctx.moveTo(i*w, 0); ctx.lineTo(i*w, cv.height); ctx.stroke(); }
         for(let j=1; j<r; j++) { ctx.beginPath(); ctx.moveTo(0, j*h); ctx.lineTo(cv.width, j*h); ctx.stroke(); }
@@ -163,37 +138,32 @@
         if(!cropImg) return alert('請先上傳圖片');
         const c = document.getElementById('cols').value;
         const r = document.getElementById('rows').value;
-        const w = cropImg.width / c;
-        const h = cropImg.height / r;
+        const w = cropImg.width / c; const h = cropImg.height / r;
         
-        frames = []; // 清空舊圖
+        frames = [];
         const tempCv = document.createElement('canvas');
         const tempCtx = tempCv.getContext('2d');
         tempCv.width = w; tempCv.height = h;
 
-        // 切割
         for(let i=0; i<r; i++) {
             for(let j=0; j<c; j++) {
                 tempCtx.clearRect(0,0,w,h);
                 tempCtx.drawImage(cropImg, j*w, i*h, w, h, 0, 0, w, h);
-                frames.push(tempCv.toDataURL());
+                frames.push(tempCv.toDataURL("image/png"));
             }
         }
-        
-        alert(`切割完成！共 ${frames.length} 張。正在轉跳至動態預覽...`);
-        showSection('sec-anime'); // 自動跳轉
-        startPlay(); // 自動播放
-        updateStaticPreview(); // 更新靜態牆
+        alert(`切割完成！共 ${frames.length} 張。`);
+        showSection('sec-anime'); startPlay(); updateStaticPreview();
     }
 
-    // --- 動態播放邏輯 ---
+    // --- 動態播放 ---
     function loadAnimeFiles(files) {
         frames = [];
         let loaded = 0;
         Array.from(files).forEach((f, i) => {
             const reader = new FileReader();
             reader.onload = (e) => {
-                frames[i] = e.target.result; // 保持順序
+                frames[i] = e.target.result;
                 loaded++;
                 if(loaded === files.length) startPlay();
             };
@@ -204,10 +174,8 @@
     function startPlay() {
         clearInterval(timer);
         if(frames.length === 0) return;
-        
         document.getElementById('frame-count').innerText = `目前載入：${frames.length} 張影格`;
         const fps = document.getElementById('fps').value;
-        
         timer = setInterval(() => {
             document.getElementById('anime-screen').src = frames[frameIdx];
             frameIdx = (frameIdx + 1) % frames.length;
@@ -219,30 +187,63 @@
         startPlay();
     }
 
-    // --- 靜態預覽與下載 ---
+    // --- APNG 合成核心邏輯 (新增) ---
+    async function generateAPNG() {
+        if(frames.length === 0) return alert("請先載入圖片！");
+        
+        const fps = document.getElementById('fps').value;
+        const delay = 1000 / fps; // 計算每幀延遲毫秒數
+        
+        // 準備 Buffer
+        const buffs = [];
+        const w = document.getElementById('anime-screen').naturalWidth || 320; 
+        const h = document.getElementById('anime-screen').naturalHeight || 270;
+        
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+
+        // 將所有 DataURL 轉為 RGBA Buffer
+        for(let i=0; i<frames.length; i++) {
+            await new Promise(resolve => {
+                const img = new Image();
+                img.onload = () => {
+                    ctx.clearRect(0, 0, w, h);
+                    ctx.drawImage(img, 0, 0, w, h);
+                    const imgData = ctx.getImageData(0, 0, w, h).data.buffer;
+                    buffs.push(imgData);
+                    resolve();
+                };
+                img.src = frames[i];
+            });
+        }
+
+        // 使用 UPNG 進行編碼 (0 = lossless)
+        const apngBlob = UPNG.encode(buffs, w, h, 0, new Array(frames.length).fill(delay));
+        
+        // 下載
+        const link = document.createElement('a');
+        link.download = "animation.png";
+        link.href = URL.createObjectURL(new Blob([apngBlob], {type: "image/png"}));
+        link.click();
+    }
+
     function updateStaticPreview() {
         const wall = document.getElementById('preview-wall');
         wall.innerHTML = '';
         frames.forEach(src => {
-            const div = document.createElement('div');
-            div.className = 'preview-thumb';
+            const div = document.createElement('div'); div.className = 'preview-thumb';
             div.innerHTML = `<img src="${src}">`;
             wall.appendChild(div);
         });
-        document.getElementById('status-text').innerText = `準備打包 ${frames.length} 張圖片`;
     }
 
     function downloadZip() {
-        if(frames.length === 0) return alert('沒有圖片可打包');
+        if(frames.length === 0) return alert('沒有圖片');
         const zip = new JSZip();
-        frames.forEach((src, i) => {
-            zip.file(`sticker_${(i+1).toString().padStart(2, '0')}.png`, src.split(',')[1], {base64: true});
-        });
-        zip.generateAsync({type:"blob"}).then(blob => {
-            const a = document.createElement('a');
-            a.download = "Sticker_Sequence.zip";
-            a.href = URL.createObjectURL(blob);
-            a.click();
+        frames.forEach((src, i) => zip.file(`${i+1}.png`, src.split(',')[1], {base64: true}));
+        zip.generateAsync({type:"blob"}).then(b => {
+            const a = document.createElement('a'); a.download = "frames.zip"; a.href = URL.createObjectURL(b); a.click();
         });
     }
 </script>
