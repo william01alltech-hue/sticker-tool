@@ -2,200 +2,188 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🐶 無毛狗貼圖旗艦神器 - AI 版 2.0</title>
+    <title>🐶 Sticker Tool 3.0 - 專業分流旗艦版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        :root { --primary-color: #00c300; --bg-dark: #222; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0f2f5; display: flex; justify-content: center; padding: 20px; margin: 0; }
-        .container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); text-align: center; max-width: 900px; width: 100%; }
-        .upload-area { border: 2px dashed #ccc; padding: 30px; border-radius: 15px; cursor: pointer; background: #fafafa; position: relative; margin-bottom: 20px; transition: 0.3s; }
-        .upload-area:hover { border-color: var(--primary-color); background: #f0fff0; }
-        .upload-area input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+        :root { --line-green: #00c300; --bg: #f8f9fa; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 0; }
+        .app-container { max-width: 1000px; margin: 40px auto; background: white; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); overflow: hidden; }
         
-        /* 預覽牆：取消高度限制，背景為專業棋盤格 */
-        #preview-wall { 
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); 
-            gap: 15px; margin: 20px 0; padding: 20px; background: var(--bg-dark); border-radius: 12px; min-height: 100px;
-        }
-        .preview-item { 
-            aspect-ratio: 1; background-color: #333; cursor: zoom-in; border-radius: 8px; display: flex; align-items: center; justify-content: center;
-            background-image: linear-gradient(45deg, #444 25%, transparent 25%), linear-gradient(-45deg, #444 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #444 75%), linear-gradient(-45deg, transparent 75%, #444 75%);
-            background-size: 20px 20px; background-position: 0 0, 0 10px, 10px 10px, 10px 0; transition: 0.2s;
-        }
-        .preview-item:hover { transform: scale(1.05); border: 2px solid var(--primary-color); }
-        .preview-item img { max-width: 90%; max-height: 90%; object-fit: contain; }
+        /* 首頁分流 UI */
+        #page-home { padding: 60px 40px; text-align: center; }
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 40px; }
+        .menu-card { background: white; border: 2px solid #eee; padding: 50px 30px; border-radius: 20px; cursor: pointer; transition: 0.3s; }
+        .menu-card:hover { border-color: var(--line-green); transform: translateY(-10px); }
+        .menu-card .icon { font-size: 4rem; margin-bottom: 20px; }
 
-        /* 燈箱視窗 */
-        #lightbox { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; cursor: pointer; flex-direction: column; }
-        #lightbox img { max-width: 80%; max-height: 80%; border: 2px solid white; background: #333; }
-        #lightbox-close { color: white; font-size: 20px; margin-bottom: 10px; }
+        /* 通用元件 */
+        .page { display: none; padding: 30px; }
+        .active { display: block; }
+        .nav-bar { display: flex; align-items: center; padding: 20px 30px; border-bottom: 1px solid #eee; }
+        .back-btn { background: #f0f0f0; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; }
 
-        /* 進度條與按鈕 */
-        #progress-container { display: none; margin: 25px 0; padding: 20px; background: #fff; border: 1px solid #eee; border-radius: 12px; text-align: left; }
-        .progress-track { width: 100%; background: #eee; height: 12px; border-radius: 10px; overflow: hidden; margin: 10px 0; }
-        #progress-bar { width: 0%; background: var(--primary-color); height: 100%; transition: width 0.2s; }
-        .btn-main { background: var(--primary-color); color: white; border: none; padding: 18px 35px; font-size: 1.2rem; font-weight: bold; border-radius: 50px; cursor: pointer; width: 100%; box-shadow: 0 4px 15px rgba(0,195,0,0.3); }
-        .btn-main:disabled { background: #ccc; cursor: not-allowed; }
-        code { background: #eee; padding: 2px 5px; cursor: pointer; border-radius: 4px; color: #d32f2f; }
+        /* 切割與預覽 */
+        .crop-layout { display: grid; grid-template-columns: 250px 1fr; gap: 20px; }
+        .sidebar { background: #f9f9f9; padding: 20px; border-radius: 15px; text-align: left; }
+        #crop-canvas { background: #333; cursor: crosshair; max-width: 100%; border: 2px solid #555; }
+        #preview-wall { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; background: #222; padding: 20px; border-radius: 15px; }
+        .preview-item { aspect-ratio: 1; background: #333; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: zoom-in; }
+        .preview-item img { max-width: 90%; max-height: 90%; }
+        
+        .btn-action { background: var(--line-green); color: white; border: none; padding: 15px 30px; border-radius: 50px; font-weight: bold; cursor: pointer; width: 100%; margin-top: 20px; }
+        #lightbox { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>🐶 Sticker Tool AI 旗艦版</h1>
-    <p>全預覽 + 點擊放大 + 自動去背描邊</p>
-
-    <div class="upload-area">
-        <input type="file" id="upload" accept="image/png, image/jpeg" multiple onchange="handleFiles()">
-        <div style="font-size: 2.5rem;">📸</div>
-        <p id="file-status">點擊或拖曳 40 張圖進來，檢查去背品質</p>
-    </div>
-
-    <div id="preview-wall"></div>
-
-    <div id="progress-container">
-        <div style="display:flex; justify-content:space-between; font-weight:bold;">
-            <span id="status-text">🚀 打包進行中...</span>
-            <span id="progress-percent">0%</span>
+<div class="app-container">
+    <div id="page-home" class="page active">
+        <div style="font-size: 5rem;">🐾</div>
+        <h1>Sticker Tool 3.0</h1>
+        <div class="menu-grid">
+            <div class="menu-card" onclick="switchPage('page-static')">
+                <div class="icon">✨</div>
+                <h2>全自動 AI 處理</h2>
+                <p>大量圖片去背、加白邊</p>
+            </div>
+            <div class="menu-card" onclick="switchPage('page-crop')">
+                <div class="icon">✂️</div>
+                <h2>圖集網格切割</h2>
+                <p>自動切分動態序列圖</p>
+            </div>
         </div>
-        <div class="progress-track"><div id="progress-bar"></div></div>
-        <div id="remaining-time" style="font-size:0.85rem; color:#666;">預計剩餘時間：計算中...</div>
     </div>
 
-    <div style="margin: 20px 0; font-weight: 500;">
-        <label><input type="checkbox" id="removeBg" checked onchange="handleFiles()"> AI 去背</label> &nbsp;
-        <label><input type="checkbox" id="addStroke" checked onchange="handleFiles()"> 自動加白邊</label>
+    <div id="page-static" class="page">
+        <nav class="nav-bar"><button class="back-btn" onclick="switchPage('page-home')">← 返回</button><h2 style="margin-left: 20px;">AI 自動處理</h2></nav>
+        <div style="margin-top:20px; border:3px dashed #eee; padding:40px; border-radius:20px; position:relative;">
+            <input type="file" id="upload" multiple accept="image/*" onchange="handleStaticFiles(this.files)" style="position:absolute; inset:0; opacity:0;">
+            <p id="static-status">點擊或拖曳原圖進來</p>
+        </div>
+        <div id="preview-wall"></div>
+        <button class="btn-action" onclick="downloadZip()">🚀 打包下載全套 ZIP</button>
     </div>
 
-    <button id="btn-zip" class="btn-main" onclick="processAll()">🚀 確認品質，一鍵打包下載 ZIP</button>
-
-    <div style="text-align: left; margin-top: 25px; padding: 15px; background: #f8f9fa; border-radius: 10px; font-size: 0.85em;">
-        <b>📌 後台資訊 (點擊複製)：</b><br>
-        標題：<code onclick="copyText('Learning Hairless Dog')">Learning Hairless Dog</code> | 
-        說明：<code onclick="copyText('Follow the cute hairless dog!')">Follow the cute hairless dog!</code>
+    <div id="page-crop" class="page">
+        <nav class="nav-bar"><button class="back-btn" onclick="switchPage('page-home')">← 返回</button><h2 style="margin-left: 20px;">圖集切割模式</h2></nav>
+        <div class="crop-layout">
+            <div class="sidebar">
+                <p><strong>1. 上傳圖集</strong></p><input type="file" accept="image/*" onchange="loadCropImage(this)">
+                <p><strong>2. 設定網格</strong></p>
+                欄數: <input type="number" id="grid-cols" value="4" oninput="drawGrid()">
+                列數: <input type="number" id="grid-rows" value="5" oninput="drawGrid()">
+                <button class="btn-action" onclick="startAutoCrop()">🚀 執行切割並處理</button>
+            </div>
+            <canvas id="crop-canvas"></canvas>
+        </div>
     </div>
 </div>
 
-<div id="lightbox" onclick="this.style.display='none'">
-    <div id="lightbox-close">✖ 點擊任意處關閉</div>
-    <img id="lightbox-img" src="">
-</div>
+<div id="lightbox" onclick="this.style.display='none'"><img id="lb-img" src=""></div>
 
 <script>
-    let currentFiles = [];
+    let currentProcessedFiles = [];
+    let rawCropImg = null;
+    const cropCanvas = document.getElementById('crop-canvas');
+    const ctx = cropCanvas.getContext('2d');
 
-    function copyText(txt) { navigator.clipboard.writeText(txt); alert('已複製'); }
-
-    async function handleFiles() {
-        const input = document.getElementById('upload');
-        if (input.files.length > 0) currentFiles = Array.from(input.files);
-        if (currentFiles.length === 0) return;
-
-        document.getElementById('file-status').innerText = `正在產出 ${currentFiles.length} 張圖的預覽...`;
-        const wall = document.getElementById('preview-wall');
-        wall.innerHTML = ''; 
-
-        for (let i = 0; i < currentFiles.length; i++) {
-            const dataUrl = await generateProcessedDataUrl(currentFiles[i], 300, 300);
-            const div = document.createElement('div');
-            div.className = 'preview-item';
-            div.onclick = () => { document.getElementById('lightbox-img').src = dataUrl; document.getElementById('lightbox').style.display = 'flex'; };
-            div.innerHTML = `<img src="${dataUrl}">`;
-            wall.appendChild(div);
-        }
-        document.getElementById('file-status').innerText = `✅ 預覽完成，點擊可放大檢查細節`;
+    function switchPage(id) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
     }
 
-    async function generateProcessedDataUrl(file, targetW, targetH) {
+    function loadCropImage(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                rawCropImg = new Image();
+                rawCropImg.onload = () => { cropCanvas.width = rawCropImg.width; cropCanvas.height = rawCropImg.height; drawGrid(); };
+                rawCropImg.src = e.target.result;
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function drawGrid() {
+        if (!rawCropImg) return;
+        ctx.drawImage(rawCropImg, 0, 0);
+        const cols = document.getElementById('grid-cols').value;
+        const rows = document.getElementById('grid-rows').value;
+        const w = cropCanvas.width / cols; const h = cropCanvas.height / rows;
+        ctx.strokeStyle = '#00c300'; ctx.lineWidth = 2; ctx.setLineDash([10, 5]);
+        for (let i = 1; i < cols; i++) { ctx.beginPath(); ctx.moveTo(i*w, 0); ctx.lineTo(i*w, cropCanvas.height); ctx.stroke(); }
+        for (let j = 1; j < rows; j++) { ctx.beginPath(); ctx.moveTo(0, j*h); ctx.lineTo(cropCanvas.width, j*h); ctx.stroke(); }
+    }
+
+    async function startAutoCrop() {
+        if (!rawCropImg) return alert("請先上傳圖片！");
+        const cols = document.getElementById('grid-cols').value;
+        const rows = document.getElementById('grid-rows').value;
+        const w = rawCropImg.width / cols; const h = rawCropImg.height / rows;
+        const blobs = []; const tempCanvas = document.createElement('canvas'); const tCtx = tempCanvas.getContext('2d');
+        tempCanvas.width = w; tempCanvas.height = h;
+
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
+                tCtx.clearRect(0,0,w,h); tCtx.drawImage(rawCropImg, c*w, r*h, w, h, 0, 0, w, h);
+                const blob = await new Promise(res => tempCanvas.toBlob(res, 'image/png'));
+                blobs.push(blob);
+            }
+        }
+        handleStaticFiles(blobs);
+        switchPage('page-static');
+    }
+
+    async function handleStaticFiles(files) {
+        const wall = document.getElementById('preview-wall'); wall.innerHTML = '正在處理中...';
+        currentProcessedFiles = [];
+        for (let i = 0; i < files.length; i++) {
+            const dataUrl = await aiProcess(files[i]); currentProcessedFiles.push(dataUrl);
+        }
+        wall.innerHTML = '';
+        currentProcessedFiles.forEach(src => {
+            const div = document.createElement('div'); div.className = 'preview-item';
+            div.onclick = () => { document.getElementById('lb-img').src = src; document.getElementById('lightbox').style.display = 'flex'; };
+            div.innerHTML = `<img src="${src}">`; wall.appendChild(div);
+        });
+        document.getElementById('static-status').innerText = `✅ 已處理 ${files.length} 張`;
+    }
+
+    async function aiProcess(file) {
         return new Promise((resolve) => {
             const reader = new FileReader();
             reader.onload = (e) => {
                 const img = new Image();
                 img.onload = () => {
-                    const tCanvas = document.createElement('canvas');
-                    const tCtx = tCanvas.getContext('2d');
-                    const offset = 10;
-                    tCanvas.width = img.width + offset * 2;
-                    tCanvas.height = img.height + offset * 2;
-                    tCtx.drawImage(img, offset, offset);
-
-                    if (document.getElementById('removeBg').checked) {
-                        const imgData = tCtx.getImageData(0, 0, tCanvas.width, tCanvas.height);
-                        const d = imgData.data;
-                        const r = d[0], g = d[1], b = d[2];
-                        for (let j = 0; j < d.length; j += 4) {
-                            if (Math.abs(d[j]-r)<35 && Math.abs(d[j+1]-g)<35 && Math.abs(d[j+2]-b)<35) d[j+3]=0;
-                        }
-                        tCtx.putImageData(imgData, 0, 0);
-                    }
-
-                    if (document.getElementById('addStroke').checked) {
-                        const sCanvas = document.createElement('canvas');
-                        sCanvas.width = tCanvas.width; sCanvas.height = tCanvas.height;
-                        const sCtx = sCanvas.getContext('2d');
-                        sCtx.shadowColor = 'white'; sCtx.shadowBlur = 1;
-                        for(let x=-2; x<=2; x++) for(let y=-2; y<=2; y++) sCtx.drawImage(tCanvas, x, y);
-                        sCtx.drawImage(tCanvas, 0, 0);
-                        tCtx.clearRect(0,0,tCanvas.width, tCanvas.height);
-                        tCtx.drawImage(sCanvas, 0, 0);
-                    }
-
-                    const outCanvas = document.createElement('canvas');
-                    const outCtx = outCanvas.getContext('2d');
-                    outCanvas.width = targetW; outCanvas.height = targetH;
-                    const scale = Math.min((targetW-24)/tCanvas.width, (targetH-24)/tCanvas.height);
-                    outCtx.drawImage(tCanvas, (targetW-tCanvas.width*scale)/2, (targetH-tCanvas.height*scale)/2, tCanvas.width*scale, tCanvas.height*scale);
-                    resolve(outCanvas.toDataURL("image/png"));
+                    const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
+                    const offset = 15; canvas.width = img.width + offset * 2; canvas.height = img.height + offset * 2;
+                    ctx.drawImage(img, offset, offset);
+                    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height); const d = imgData.data;
+                    const r = d[0], g = d[1], b = d[2];
+                    for (let j = 0; j < d.length; j += 4) { if (Math.abs(d[j]-r)<35 && Math.abs(d[j+1]-g)<35 && Math.abs(d[j+2]-b)<35) d[j+3]=0; }
+                    ctx.putImageData(imgData, 0, 0);
+                    const sCanvas = document.createElement('canvas'); sCanvas.width = canvas.width; sCanvas.height = canvas.height;
+                    const sCtx = sCanvas.getContext('2d'); sCtx.shadowColor = 'white'; sCtx.shadowBlur = 1;
+                    for(let x=-2; x<=2; x++) for(let y=-2; y<=2; y++) sCtx.drawImage(canvas, x, y);
+                    sCtx.drawImage(canvas, 0, 0);
+                    resolve(sCanvas.toDataURL("image/png"));
                 };
                 img.src = e.target.result;
             };
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(file instanceof Blob ? file : new Blob([file]));
         });
     }
 
-    async function processAll() {
-        if (currentFiles.length === 0) return alert('請先選取圖片！');
-        const progressContainer = document.getElementById('progress-container');
-        const progressBar = document.getElementById('progress-bar');
-        const remainingText = document.getElementById('remaining-time');
-        const btn = document.getElementById('btn-zip');
-        
-        btn.disabled = true;
-        progressContainer.style.display = 'block';
-
+    async function downloadZip() {
+        if (currentProcessedFiles.length === 0) return alert("請先處理圖片！");
         const zip = new JSZip();
-        const startTime = Date.now();
-        const specs = [
-            { w: 240, h: 240, folder: 'main', prefix: 'main' },
-            { w: 96, h: 74, folder: 'tab', prefix: 'tab' },
-            { w: 370, h: 320, folder: 'stickers', prefix: '' }
-        ];
-
-        for (let i = 0; i < currentFiles.length; i++) {
-            for (const spec of specs) {
-                const dataUrl = await generateProcessedDataUrl(currentFiles[i], spec.w, spec.h);
-                const blob = await (await fetch(dataUrl)).blob();
-                const idx = (i + 1).toString().padStart(2, '0');
-                zip.file(`${spec.folder}/${spec.prefix ? spec.prefix : idx}.png`, blob);
-            }
-            const current = i + 1;
-            const percent = Math.round((current / currentFiles.length) * 100);
-            const elapsed = (Date.now() - startTime) / 1000;
-            const estimate = Math.round((elapsed / current) * (currentFiles.length - current));
-            progressBar.style.width = percent + '%';
-            document.getElementById('progress-percent').innerText = percent + '%';
-            remainingText.innerText = `預計剩餘時間：${estimate} 秒 (已完成 ${current}/${currentFiles.length})`;
+        for (let i = 0; i < currentProcessedFiles.length; i++) {
+            const blob = await (await fetch(currentProcessedFiles[i])).blob();
+            zip.file(`sticker_${(i+1).toString().padStart(2, '0')}.png`, blob);
         }
-
-        const content = await zip.generateAsync({type: "blob"});
-        const link = document.createElement('a');
-        link.download = `無毛狗貼圖_全能旗艦版.zip`;
-        link.href = URL.createObjectURL(content);
-        link.click();
-        
-        btn.disabled = false;
-        remainingText.innerText = "✅ 全部打包下載完成！";
+        zip.generateAsync({type: "blob"}).then(c => {
+            const l = document.createElement('a'); l.download = `Pack_3.0.zip`; l.href = URL.createObjectURL(c); l.click();
+        });
     }
 </script>
 </body>
