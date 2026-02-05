@@ -35,7 +35,7 @@
         
         #crop-wrapper { background: #374151; padding: 10px; border-radius: 16px; text-align: center; overflow: hidden; margin-bottom: 25px; position: relative; }
         
-        /* 關鍵修正 2: 強制 Canvas 關閉瀏覽器觸控行為，解決手機無法拖曳的問題 */
+        /* ★ 核心修正：強制 Canvas 關閉瀏覽器預設觸控行為，讓程式碼完全接管拖曳 */
         canvas {
             touch-action: none !important;
             position: relative;
@@ -73,8 +73,8 @@
 
 <div class="container">
     <header>
-        <h1>🐶 Sticker Tool <span class="badge">v5.1 (測試版)</span></h1>
-        <p>新功能：拖曳綠色線條可微調切割位置！</p>
+        <h1>🐶 Sticker Tool <span class="badge">v5.1 Pro</span></h1>
+        <p>新功能：支援觸控拖曳綠色線條，精準微調切割位置！</p>
     </header>
 
     <div class="nav-grid">
